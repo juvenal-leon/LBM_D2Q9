@@ -43,6 +43,7 @@ int cy[Q]={0, 0, 1,  0, -1, 1,  1, -1, -1};
 double f[Ny1][Nx1][Q]; //array of the distribution functions (DFs)
 double f_post[Ny1][Nx1][Q]; // array of the post-collision DFs
 double rho[Ny1][Nx1], ux[Ny1][Nx1], uy[Ny1][Nx1]; // arrays of fluid density and velocity
+int    boundary[Ny1][Nx1] = { };  // boolean array for boundary nodes
 double tau; // relaxation time for BGK model
 double s[Q]; // relaxation rates for MRT model
 double D[Q]={9, 36, 36, 6, 12, 6, 12, 4, 4};	// D = M*M^T
@@ -62,6 +63,9 @@ double meq(double RHO, double U, double V, int k);
 void Streaming(void);	// Streaming
 void Den_Vel(void);	// Fluid variables
 void Bounce_back(void);	// Bounce-back boundary condition
+void Bounce_backV(void);
+
+
 double Err(void);	// Difference in velocity field
 double u0[Ny1][Nx1],v0[Ny1][Nx1];
 void Data_Output(void);	// Output simulation data
@@ -230,11 +234,12 @@ void Streaming()
     {
         jd=j-cy[k]; id=i-cx[k]; // upwind node
 
-        if(jd>=0 && jd<=Ny && id>=0 && id<=Nx) // fluid node
+        //if(jd>=0 && jd<=Ny && id>=0 && id<=Nx) // fluid node
+        if (!boundary[jd][id])
             f[j][i][k]=f_post[jd][id][k]; // streaming
-        //else
+        else
         // bounce-back on the boundary node:
-        //            f[j][i][k]=f_post[jd][id][rc[k]]+6*w[k]*rho[j][i]*(cx[k]*uwx[jd][id]+cy[k]*uwy[jd][id]);
+            f[j][i][k]=f_post[jd][id][rc[k]]; //+ 6*w[k]*rho[j][i]*(cx[k]*uwx[jd][id]+cy[k]*uwy[jd][id]);
     }
 }
 
@@ -333,6 +338,50 @@ void Bounce_back()
 */
 }
 
+void Bounce_backV()
+{
+    int i,j;
+    float u0=0.10;
+   
+    //	j=Ny: top plate
+    for(i=0;i<=Nx;i++)
+    {
+        f[Ny][i][4]=f_post[0][i][4];
+        f[Ny][i][7]=f_post[0][i][7];
+        f[Ny][i][8]=f_post[0][i][8];
+    }
+    
+    //	j=0: bottom plate
+    
+    for(i=0;i<=Nx;i++)
+    {
+        f[0][i][2]=f_post[Ny][i][2];
+        f[0][i][5]=f_post[Ny][i][5];
+        f[0][i][6]=f_post[Ny][i][6];
+    }
+    
+    
+    
+    
+     // i=0: left wall
+     for(j=0;j<=Ny;j++)
+     {
+         f[j][0][1]=f_post[j][0][3];
+         f[j][0][5]=f_post[j][0][7];
+         f[j][0][8]=f_post[j][0][6];
+     }
+     
+     //	i=Nx: right wall
+     for(j=0;j<=Ny;j++)
+     {
+         f[j][Nx][3]=f_post[j][Nx][1];
+         f[j][Nx][7]=f_post[j][Nx][5];
+         f[j][Nx][6]=f_post[j][Nx][8];
+     }
+    
+}
+
+
 //=========================================================
 
 
@@ -348,11 +397,17 @@ void Den_Vel()
     
     for(j=0;j<=Ny;j++) for(i=0;i<=Nx;i++)  
     {
-        rho[j][i]=f[j][i][0]+f[j][i][1]+f[j][i][2]+f[j][i][3]+f[j][i][4]+f[j][i][5]+f[j][i][6]+f[j][i][7]+f[j][i][8]; 
-
-        ux[j][i]=(f[j][i][1]+f[j][i][5]+f[j][i][8]-f[j][i][3]-f[j][i][6]-f[j][i][7])/rho[j][i]; 
+        if (!boundary[j][i])
+        {
         
-        uy[j][i]=(f[j][i][5]+f[j][i][6]+f[j][i][2]-f[j][i][7]-f[j][i][8]-f[j][i][4])/rho[j][i];  
+            rho[j][i]=f[j][i][0]+f[j][i][1]+f[j][i][2]+f[j][i][3]+f[j][i][4]+f[j][i][5]+f[j][i][6]+f[j][i][7]+f[j][i][8];
+
+            ux[j][i]=(f[j][i][1]+f[j][i][5]+f[j][i][8]-f[j][i][3]-f[j][i][6]-f[j][i][7])/rho[j][i]; 
+            
+            uy[j][i]=(f[j][i][5]+f[j][i][6]+f[j][i][2]-f[j][i][7]-f[j][i][8]-f[j][i][4])/rho[j][i];
+            
+        }
+            
     }
     
 }
@@ -430,12 +485,24 @@ void	Data_Output() // Output data
     
     fclose(fp);
     
+    
+    fp=fopen("solid.dat","w");
+    
+    for(j=0;j<Ny1;j++){
+        
+        for (i=0; i<Nx1; i++) fprintf(fp,"%d ",boundary[j][i]); fprintf(fp,"\n");
+        
+    }
+    
+    fclose(fp);
+
+    
 }
 
 
 //=========================================================
 
-void	force(void)// Output data
+void	force(void)//
 //=========================================================
 {
     //	i=Nx: right wall
@@ -462,10 +529,77 @@ void	force(void)// Output data
         f[j][0][5]=f[j][Nx][5]+frce;
         f[j][0][8]=f[j][Nx][8]+frce;
     }
-    
-
-
-    
 }
+
+    //=========================================================
+    
+    void	forceV(void)//
+    //=========================================================
+    {
+        //	i=Nx: right wall
+        double frce;
+        double omega=1;
+        double cs2=1.0/3.0;
+        double uf=0.02;
+        double visc=(1.0/omega-0.5)*cs2;
+        double fpois=8.0*visc*uf/Ny1/Ny1;
+        double rho_0=1.0;
+        fpois=rho_0*fpois/6;
+        frce=fpois;
+        
+        for (int i=0; i<=Nx; i++)
+        {
+            for (int j=0; j<=Ny; j++)
+            {
+                
+                if (!boundary[j][i])
+                {
+                    f[j][i][4]+=frce;
+                    f[j][i][7]+=frce;
+                    f[j][i][8]+=frce;
+
+                    f[j][i][2]-=frce;
+                    f[j][i][5]-=frce;
+                    f[j][i][6]-=frce;
+                }
+            }
+        
+        }
+        
+/*
+        //	j=Ny: top plate
+        for(int i=0;i<=Nx;i++)
+        {
+            f[Ny][i][4]=f_post[0][i][4]+frce;
+            f[Ny][i][7]=f_post[0][i][7]+frce;
+            f[Ny][i][8]=f_post[0][i][8]+frce;
+        }
+
+        //	j=0: bottom plate
+        for(int i=0;i<=Nx;i++)
+        {
+            f[0][i][2]=f_post[Ny][i][2]-frce;
+            f[0][i][5]=f_post[Ny][i][5]-frce;
+            f[0][i][6]=f_post[Ny][i][6]-frce;
+        }
+ */
+    
+    }
+
+
+void mkeSolid(int x1, int y1, int x2, int y2)
+{
+    for (int i=x1; i<=x2; i++)
+    {
+        for (int j=y1; j<=y2; j++)
+        {
+            boundary[j][i]=1;
+        }
+        
+    }
+
+}
+
+
 
 

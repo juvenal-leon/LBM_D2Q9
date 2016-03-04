@@ -31,22 +31,27 @@ int main()
     k=0;
     
     err=1.0;
+    double g=0.001;
+    
     tau=3*L*uw/Re+0.5; // relaxation time for BGK
     s[7]=s[8]=1.0/tau;	s[0]=s[3]=s[5]=0.0;	s[4]=s[6]=8*(2-
     s[7])/(8-s[7]);	s[1]=1.6;	s[2]=1.8; // relaxation rates for MRT
     
     Init_Eq();
+    mkeSolid(0, 0, 0, Ny);
+    mkeSolid(Nx,0,Nx,Ny);
+    mkeSolid(30, 30, 60, 60);
     
-    while(err>1.0e-6)
-    //while(err>1.0e-2)
+    //while(err>1.0e-6)
+    while(err>1.0e-3)
     {
         
         k++;
         Coll_BGK();	//BGK collision
         //	Coll_MRT();	//MRT collision
         Streaming();	// Streaming
-        Bounce_back(); // No-Slip boundary condition
-        force();
+        Bounce_backV(); // No-Slip boundary condition
+        forceV();
         Den_Vel();	// Fluid variables
         
         if(k%1000==0)
