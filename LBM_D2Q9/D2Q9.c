@@ -31,7 +31,7 @@ int main()
     k=0;
     
     err=1.0;
-    double g=0.001;
+   
     
     tau=3*L*uw/Re+0.5; // relaxation time for BGK
     s[7]=s[8]=1.0/tau;	s[0]=s[3]=s[5]=0.0;	s[4]=s[6]=8*(2-
@@ -40,10 +40,11 @@ int main()
     Init_Eq();
     mkeSolid(0, 0, 0, Ny);
     mkeSolid(Nx,0,Nx,Ny);
-    mkeSolid(30, 30, 60, 60);
+    //mkeSolid(30, 30, 60, 60);
+    mkePorous(12.5);
     
-    //while(err>1.0e-6)
-    while(err>1.0e-3)
+    while(err>1.0e-11)
+    //while(err>1.0e-3)
     {
         
         k++;
@@ -64,6 +65,7 @@ int main()
         
     }
     Data_Output();	// Output simulation data
+    
     return 1;
 }
 

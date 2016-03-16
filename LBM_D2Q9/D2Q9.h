@@ -21,6 +21,8 @@
 #include	<stdio.h>
 #include	<stdlib.h>
 #include	<math.h>
+#include	<time.h>
+
 //#define	Nx	256	// number of cells in the x-direction
 //#define	Ny	256	// number of cells in the y-direction
 #define	Nx	100	// number of cells in the x-direction
@@ -47,7 +49,7 @@ int    boundary[Ny1][Nx1] = { };  // boolean array for boundary nodes
 double tau; // relaxation time for BGK model
 double s[Q]; // relaxation rates for MRT model
 double D[Q]={9, 36, 36, 6, 12, 6, 12, 4, 4};	// D = M*M^T
-
+double g=0.001;
 
 
 double w[Q]={4.0/9,1.0/9,1.0/9,1.0/9,1.0/9,1.0/36,1.0/36, 1.0/36,1.0/36}; // the weights in the EDF
@@ -82,7 +84,6 @@ void Data_Output(void);	// Output simulation data
 void Init_Eq()
 
 {
-    
     int j, i, k;
     
     for (j=0;j<=Ny;j++)
@@ -101,11 +102,8 @@ void Init_Eq()
                 f[j][i][k]=feq(rho[j][i],ux[j][i],uy[j][i],k);
             }
             
-            
-        
         }
     }
-    
 }
 //========================================================
 
@@ -118,9 +116,14 @@ void Init_Eq()
 double feq(double RHO, double U, double V, int k)
 {
     
-    double cu, U2; 
+    double cu, U2;
+    
+    //V = V + (tau*g);
+    
     cu=cx[k]*U+cy[k]*V; // c_k*u 
+    
     U2=U*U+V*V; // u*u;
+    
     return w[k]*RHO*(1.0+3.0*cu+4.5*cu*cu-1.5*U2);
 }
 
@@ -456,8 +459,28 @@ void	Data_Output() // Output data
     for(j=0;j<=Ny;j++) fprintf(fp,"%e \n", (j+0.5)/L); fclose(fp);
     
     
+    fp=fopen("magnitud.txt", "w+");
+    for(j=0;j<=Ny;j++)
+        for(i=0;i<=Nx;i++)
+        {
+            //if (!boundary[j][i])
+            //    fprintf(fp,"%e %e %e\n", (i+0.5)/L, (j+0.5)/L, sqrt(pow(ux[j][i],2) + pow(uy[j][i],2)));
+            fprintf(fp,"%e\n", sqrt(pow(ux[j][i],2) + pow(uy[j][i],2)));
+        }
+    fclose(fp);
+
+    fp=fopen("velocidad.txt", "w+");
+    for(j=0;j<=Ny;j++)
+        for(i=0;i<=Nx;i++)
+        {
+            //if (!boundary[j][i])
+                fprintf(fp,"%e %e\n", ux[j][i], uy[j][i]);
+        }
+    fclose(fp);
     
-    fp=fopen("ux.dat","w"); for(j=0;j<=Ny;j++) {
+    
+    fp=fopen("ux.txt","w");
+    for(j=0;j<=Ny;j++) {
         
         for (i=0; i<=Nx; i++) fprintf(fp,"%e ",ux[j][i]); fprintf(fp,"\n");
         
@@ -465,7 +488,7 @@ void	Data_Output() // Output data
     
     fclose(fp);
     
-    fp=fopen("uy.dat","w");
+    fp=fopen("uy.txt","w");
     
     for(j=0;j<=Ny;j++){
         
@@ -473,9 +496,11 @@ void	Data_Output() // Output data
         
     }
     
+    
+    
     fclose(fp);
     
-    fp=fopen("rho.dat","w");
+    fp=fopen("rho.txt","w");
     
     for(j=0;j<=Ny;j++){
         
@@ -486,7 +511,7 @@ void	Data_Output() // Output data
     fclose(fp);
     
     
-    fp=fopen("solid.dat","w");
+    fp=fopen("solid.txt","w");
     
     for(j=0;j<Ny1;j++){
         
@@ -495,8 +520,7 @@ void	Data_Output() // Output data
     }
     
     fclose(fp);
-
-    
+        
 }
 
 
@@ -589,9 +613,9 @@ void	force(void)//
 
 void mkeSolid(int x1, int y1, int x2, int y2)
 {
-    for (int i=x1; i<=x2; i++)
+    for (int j=y1; j<=y2; j++)
     {
-        for (int j=y1; j<=y2; j++)
+        for (int i=x1; i<=x2; i++)
         {
             boundary[j][i]=1;
         }
@@ -600,6 +624,21 @@ void mkeSolid(int x1, int y1, int x2, int y2)
 
 }
 
+void mkePorous(double percent)
+{
+    int i,j;
+    srand((unsigned int)time(NULL));
+    for(j=1;j<Ny;j++)
+    {
+        for(i=1;i<Nx;i++)
+        {
+            //if (!boundary[j][i])
+            
+            boundary[j][i] = (rand()>RAND_MAX*(percent/100))? 0 : 1;
+        }
+    }
+
+}
 
 
 
