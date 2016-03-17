@@ -1,5 +1,5 @@
 file = //Users/juvenal/Documents/Tesis/LBM_D2Q9/LBM_D2Q9/magnitud.txt
-grid = 101 x 101
+grid = 451 x 451
 format = ascii
 interleaving = record
 majority = column
