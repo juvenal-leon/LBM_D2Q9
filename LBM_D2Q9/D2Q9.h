@@ -25,8 +25,8 @@
 
 //#define	Nx	256	// number of cells in the x-direction
 //#define	Ny	256	// number of cells in the y-direction
-#define	Nx	100	// number of cells in the x-direction
-#define	Ny	100	// number of cells in the y-direction
+#define	Nx	450	// number of cells in the x-direction
+#define	Ny	450	// number of cells in the y-direction
 
 #define Nx1	(Nx+1)
 #define Ny1	(Ny+1)

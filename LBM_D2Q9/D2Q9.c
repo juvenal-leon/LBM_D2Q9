@@ -41,9 +41,9 @@ int main()
     mkeSolid(0, 0, 0, Ny);
     mkeSolid(Nx,0,Nx,Ny);
     //mkeSolid(30, 30, 60, 60);
-    mkePorous(12.5);
+    mkePorous(25);
     
-    while(err>1.0e-11)
+    while(err>1.0e-6)
     //while(err>1.0e-3)
     {
         
