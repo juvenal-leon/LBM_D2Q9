@@ -1,0 +1,12 @@
+file = //Users/juvenal/Documents/Tesis/LBM_D2Q9/LBM_D2Q9/magnitud.txt
+grid = 101 x 101
+format = ascii
+interleaving = record
+majority = column
+field = magnitud
+structure = scalar
+type = float
+dependency = positions
+positions = regular, regular, 0, 1, 0, 1
+
+end

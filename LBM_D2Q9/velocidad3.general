@@ -1,0 +1,12 @@
+file = //Users/juvenal/Documents/Tesis/LBM_D2Q9/LBM_D2Q9/velocidad.txt
+grid = 101 x 101
+format = ascii
+interleaving = record-vector
+majority = column
+field = field0
+structure = 2-vector
+type = float
+dependency = positions
+positions = regular, regular, 0, 1, 0, 1
+
+end
