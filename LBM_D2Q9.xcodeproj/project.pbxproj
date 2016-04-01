@@ -24,7 +24,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		CF628BAA1C6ABECD0086B127 /* LBM_D2Q9 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = LBM_D2Q9; sourceTree = BUILT_PRODUCTS_DIR; };
+		CF1972BA1CAC8C7900CABBF0 /* en */ = {isa = PBXFileReference; lastKnownFileType = text; name = en; path = en.lproj/LBM_D2Q9; sourceTree = "<group>"; };
+		CF628BAA1C6ABECD0086B127 /* LBM_D2Q9 */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = text; name = LBM_D2Q9; path = /Users/juvenal/Documents/Tesis/LBM_D2Q9/build/Debug/LBM_D2Q9; sourceTree = "<absolute>"; };
 		CF628BAD1C6ABECD0086B127 /* D2Q9.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = D2Q9.c; sourceTree = "<group>"; };
 		CF628BB51C6ABF9E0086B127 /* D2Q9.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = D2Q9.h; sourceTree = "<group>"; };
 		CF628BB61C6BE3480086B127 /* Makefile */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.make; path = Makefile; sourceTree = "<group>"; usesTabs = 1; };
@@ -52,7 +53,7 @@
 		CF628BAB1C6ABECD0086B127 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				CF628BAA1C6ABECD0086B127 /* LBM_D2Q9 */,
+				CF1972BB1CAC8C7900CABBF0 /* LBM_D2Q9 */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -129,6 +130,17 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		CF1972BB1CAC8C7900CABBF0 /* LBM_D2Q9 */ = {
+			isa = PBXVariantGroup;
+			children = (
+				CF1972BA1CAC8C7900CABBF0 /* en */,
+			);
+			name = LBM_D2Q9;
+			sourceTree = BUILT_PRODUCTS_DIR;
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		CF628BAF1C6ABECD0086B127 /* Debug */ = {
@@ -241,6 +253,7 @@
 				CF628BB31C6ABECD0086B127 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
 	};
