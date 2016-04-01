@@ -22,15 +22,20 @@
 #include	<stdlib.h>
 #include	<math.h>
 #include	<time.h>
+#include	<assert.h>
+#include    <string.h>
+
+
+
 
 //#define	Nx	256	// number of cells in the x-direction
 //#define	Ny	256	// number of cells in the y-direction
-#define	Nx	450	// number of cells in the x-direction
-#define	Ny	450	// number of cells in the y-direction
+//#define	Nx	450	// number of cells in the x-direction
+//#define	Ny	450	// number of cells in the y-direction
 
-#define Nx1	(Nx+1)
-#define Ny1	(Ny+1)
-#define L (Ny+1)	// width of the cavity
+//#define Nx1	(Nx+1)
+//#define Ny1	(Ny+1)
+//#define L (Ny+1)	// width of the cavity
 #define	Q 9		// number of discrete velocities
 #define rho0	1.0	// initial density
 #define ux0	0.0	// initial velocity component in x direction
@@ -38,14 +43,20 @@
 #define uw	0.1
 #define Re 400.0
 
+int Nx, Ny, Nx1, Ny1, L;
+
 //         0, 1, 2,  3,  4, 5,  6,  7,  8
 int cx[Q]={0, 1, 0, -1,  0, 1, -1, -1,  1};
 int cy[Q]={0, 0, 1,  0, -1, 1,  1, -1, -1};
 
-double f[Ny1][Nx1][Q]; //array of the distribution functions (DFs)
-double f_post[Ny1][Nx1][Q]; // array of the post-collision DFs
-double rho[Ny1][Nx1], ux[Ny1][Nx1], uy[Ny1][Nx1]; // arrays of fluid density and velocity
-int    boundary[Ny1][Nx1] = { };  // boolean array for boundary nodes
+//double f[Ny1][Nx1][Q]; //array of the distribution functions (DFs)
+//double f_post[Ny1][Nx1][Q]; // array of the post-collision DFs
+//double rho[Ny1][Nx1], ux[Ny1][Nx1], uy[Ny1][Nx1]; // arrays of fluid density and velocity
+//int    boundary[Ny1][Nx1] = { };  // boolean array for boundary nodes
+double ***f, ***f_post;
+double **rho, **ux, **uy;
+int    **boundary;
+
 double tau; // relaxation time for BGK model
 double s[Q]; // relaxation rates for MRT model
 double D[Q]={9, 36, 36, 6, 12, 6, 12, 4, 4};	// D = M*M^T
@@ -55,6 +66,13 @@ double g=0.001;
 double w[Q]={4.0/9,1.0/9,1.0/9,1.0/9,1.0/9,1.0/36,1.0/36, 1.0/36,1.0/36}; // the weights in the EDF
 int rc[Q]={0,3,4,1,2,7,8,5,6}; // index of reversed velocity
 
+void readBoundaryFromFile(const char *);
+
+double ***new3DArray(int, int, int, size_t);
+double **new2DArray(int, int, size_t);
+int **new2DIntArray(int, int, size_t);
+
+void Init_Conditions(int , char *[]);
 void Init_Eq(void);	//Initialization
 double feq(double RHO, double U, double V, int k);
 // Equilibrium distribution function
@@ -69,8 +87,14 @@ void Bounce_backV(void);
 
 
 double Err(void);	// Difference in velocity field
-double u0[Ny1][Nx1],v0[Ny1][Nx1];
+//double u0[Ny1][Nx1],v0[Ny1][Nx1];
+double **u0,**v0;
 void Data_Output(void);	// Output simulation data
+
+void mkePorous(double);
+void mkeSolid(int, int, int, int);
+
+
 
 
 //=========================================================
@@ -86,8 +110,28 @@ void Init_Eq()
 {
     int j, i, k;
     
+//    double (*rho)[Nx]=malloc(sizeof(double)*Ny*Nx);
+//    double (*ux)[Nx]=malloc(sizeof(double)*Ny*Nx);
+//    double (*uy)[Nx]=malloc(sizeof(double)*Ny*Nx);
+    rho=new2DArray(Nx1, Ny1, sizeof(double));
+    ux=new2DArray(Nx1, Ny1, sizeof(double));
+    uy=new2DArray(Nx1, Ny1, sizeof(double));
+    
+    
+    f =    new3DArray(Nx1, Ny1, (int)Q, sizeof(double));
+    f_post=new3DArray(Nx1, Ny1, (int)Q, sizeof(double));
+    
+    
+    for (int j=0; j<Ny; j++)
+    {
+        for (int i=0; i<Nx; i++)
+        {
+            rho[j][i]=0;
+        }
+    }
+    
     for (j=0;j<=Ny;j++)
-    { 
+    {
 
         for(i=0;i<=Nx;i++)
         {
@@ -105,9 +149,111 @@ void Init_Eq()
         }
     }
 }
+
+
+//===========================================================================================
+//
+//Allocation of new arrays
+//===========================================================================================
+
+void*** newarray(int icount, int jcount, int kcount, int type_size)
+{
+    void*** iret = (void***)malloc(icount*sizeof(void***)+icount*jcount*sizeof(void**)+icount*jcount*kcount*type_size);
+    void** jret = (void**)(iret+icount);
+    char* kret = (char*)(jret+icount*jcount);
+    for(int i=0;i<icount;i++)
+        iret[i] = &jret[i*jcount];
+    for(int i=0;i<icount;i++)
+        for(int j=0;j<jcount;i++)
+            jret[i*jcount+j] = &kret[i*jcount*kcount*type_size+j*kcount*type_size];
+    return iret;
+}
+
+double ***new3DArray(int xCols, int yRows, int zLayers, size_t typeSize)
+{
+    double ***array;
+    
+    array=calloc(yRows, sizeof( double **));
+    assert(array!=NULL);
+    for (int j=0;j<yRows; j++)
+    {
+        array[j]=calloc(xCols, sizeof( double *));
+        assert(array[j]!=NULL);
+        for (int i=0; i<xCols; i++)
+        {
+            array[j][i]=calloc(zLayers, sizeof(double));
+            assert(array[j][i]!=NULL);
+        }
+    }
+    return array;
+}
+
+double **new2DArray(int xCols, int yRows, size_t typeSize)
+{
+    double **array;
+    
+    array=calloc(yRows, sizeof( double *));
+    assert(array!=NULL);
+    for (int j=0; j<yRows; j++)
+    {
+        array[j]=calloc(xCols, sizeof(double));
+        assert(array[j]!=NULL);
+    }
+    return array;
+}
+
+int **new2DIntArray(int xCols, int yRows, size_t typeSize)
+{
+    int **array;
+    
+    array=calloc(yRows, sizeof( int *));
+    assert(array!=NULL);
+    for (int j=0; j<yRows; j++)
+    {
+        array[j]=calloc(xCols, sizeof(int));
+        assert(array[j]!=NULL);
+    }
+    return array;
+}
+//===========================================================================================
+
+
+
 //========================================================
 
+void Init_Conditions(int num_Arg, char *arr_Arg[])
 //=========================================================
+{
+    
+    if (strcmp(arr_Arg[1],"0")==0)
+    {
+        Nx=450;
+        Ny=450;
+        Nx1=Nx+1;
+        Ny1=Ny+1;
+        boundary=new2DIntArray(Nx1, Ny1, sizeof(int));
+        mkeSolid(0, 0, 0, Ny);
+        mkeSolid(Nx,0,Nx,Ny);
+        //mkeSolid(30, 30, 60, 60);
+        mkePorous(25);
+    }
+    else
+    {
+        readBoundaryFromFile("/Users/juvenal/Documents/Tesis/LBM_D2Q9/LBM_D2Q9/mediosporosos/matrix.txt");
+    }
+    
+    L=Ny1;
+    
+    u0=new2DArray(Nx1, Ny1, sizeof(double));
+    v0=new2DArray(Nx1, Ny1, sizeof(double));
+
+    
+
+
+}
+
+
+
 //-----------------------------------------------------------------
 
 // Subroutine: calculation the equilibrium distribution
@@ -136,7 +282,7 @@ double feq(double RHO, double U, double V, int k)
 //---------------------------------------------------------
 void Coll_BGK()
 {
-    
+    //printf("Begin collision.... ");
     int j, i, k; 
     double FEQ;
     
@@ -148,6 +294,7 @@ void Coll_BGK()
         f_post[j][i][k] = f[j][i][k]-(f[j][i][k]-FEQ)/tau;
         
     }
+    //printf("End collision....\n");
 }
 
 //=========================================================
@@ -231,19 +378,27 @@ double meq(double RHO, double U, double V, int k)
 //---------------------------------------------------------
 void Streaming()
 {
+    //printf("Begin streaming.... ");
     
     int j, i, jd, id, k;
-    for (j=0;j<=Ny;j++) for(i=0;i<=Nx;i++) for(k=0;k<Q;k++)  
+    //for (j=0;j<Ny;j++) for(i=0;i<Nx;i++) for(k=0;k<Q;k++)
+    for (j=0;j<=Ny;j++) for(i=0;i<=Nx;i++) for(k=0;k<Q;k++)
     {
         jd=j-cy[k]; id=i-cx[k]; // upwind node
 
-        //if(jd>=0 && jd<=Ny && id>=0 && id<=Nx) // fluid node
-        if (!boundary[jd][id])
-            f[j][i][k]=f_post[jd][id][k]; // streaming
-        else
-        // bounce-back on the boundary node:
-            f[j][i][k]=f_post[jd][id][rc[k]]; //+ 6*w[k]*rho[j][i]*(cx[k]*uwx[jd][id]+cy[k]*uwy[jd][id]);
+        if(jd>=0 && jd<=Ny && id>=0 && id<=Nx) // fluid node
+        {
+            if (!boundary[jd][id])
+                f[j][i][k]=f_post[jd][id][k]; // streaming
+            else
+                // bounce-back on the boundary node:
+                f[j][i][k]=f_post[jd][id][rc[k]]; //+ 6*w[k]*rho[j][i]*(cx[k]*uwx[jd][id]+cy[k]*uwy[jd][id]);
+        }
+        
     }
+    
+    //printf("End streaming\n");
+
 }
 
 //=========================================================
@@ -255,6 +410,7 @@ void Streaming()
 //---------------------------------------------------------
 void Bounce_back()
 {
+    //printf("Bounce back.... ");
     int i,j;
     float u0=0.10;
     //	j=Ny: top plate
@@ -339,10 +495,13 @@ void Bounce_back()
         f[j][Nx][6]=f_post[j][Nx][8];
     }
 */
+    //printf("End bounce back....\n");
 }
 
 void Bounce_backV()
 {
+    //printf("Begin bounce back V.... ");
+
     int i,j;
     float u0=0.10;
    
@@ -382,6 +541,8 @@ void Bounce_backV()
          f[j][Nx][6]=f_post[j][Nx][8];
      }
     
+    //printf("End bounce back V....\n");
+
 }
 
 
@@ -637,6 +798,123 @@ void mkePorous(double percent)
             boundary[j][i] = (rand()>RAND_MAX*(percent/100))? 0 : 1;
         }
     }
+
+}
+
+void readBoundaryFromFile(const char * fileName)
+{
+    
+    FILE *fp;
+    int c;
+    int xcols=0, yrows=0;
+    int lineLength=0;
+    char *line;
+    int  *lineCopy;
+    
+    //char line[2000];
+    fp=fopen(fileName,"r");
+    if (fp != NULL)
+    {
+        do
+        {
+            c=fgetc(fp);
+            if (c!=0x20 && c!=10)
+            {
+                xcols++;
+            }
+            
+        }while (c!=10);
+        printf("Número de columnas: %d\n",xcols);
+        
+        lineLength=xcols+xcols-1+1; //cols + blanks + LF
+        line=(char *)calloc(lineLength, sizeof(char));
+        
+        //int res=fseek(fp, 0, SEEK_SET);
+        fclose(fp);
+        fp=fopen(fileName,"r");
+        while (!feof(fp))
+        {
+            fread(line,1, lineLength, fp);
+            yrows++;
+        }
+        yrows--;
+        printf("Número de renglones: %d\n",yrows);
+        
+        Nx=xcols;
+        Ny=yrows;
+        Nx1=Nx+1;
+        Ny1=Ny+1;
+        
+        
+        lineCopy=(int *)calloc(xcols,      sizeof(int));
+        int num;
+
+        
+        
+        boundary=new2DIntArray(Nx1, Ny1, sizeof(int));
+        int res=fseek(fp, 0, SEEK_SET);
+        for (int j=yrows; j>=1; j--)
+        {
+            int pointer=(j-1)*lineLength;
+            fseek(fp, pointer, SEEK_SET);
+            fread(line, 1, lineLength, fp);
+            int i=0;
+            for (int n=0; n<lineLength; n++)
+            {
+                if(line[n]!=0x20 && line[n]!=10) //if not a space and not a LF (just 1's and 0's)
+                {
+                    num=line[n]-'0';
+                    lineCopy[i]=num;
+                    boundary[j-1][i++]=num;
+                }
+            }
+            
+            
+        }
+        fclose(fp);
+        
+        fp=fopen("matrix1.txt","w+");
+        if (fp!=NULL)
+        {
+            for (int j=0; j<yrows; j++)
+            {
+                for (int i=0; i<xcols; i++)
+                {
+                    fprintf(fp,"%d ",boundary[j][i]);
+                }
+                fprintf(fp,"\n");
+            }
+        }
+        fclose(fp);
+
+        
+        
+        
+        
+//        int (*matrix)[xcols]=malloc(sizeof(int)*yrows*xcols);
+//        
+//        for (int j=0; j<yrows; j++)
+//        {
+//            for (int i=0; i<xcols; i++)
+//            {
+//                matrix[j][i]=0;
+//            }
+//        }
+//        
+//        
+//        fp=fopen("matrix0.txt","w+");
+//        for (int j=0; j<yrows; j++)
+//        {
+//            for (int i=0; i<xcols; i++)
+//            {
+//                fprintf(fp,"%d ",matrix[j][i]);
+//            }
+//            fprintf(fp,"\n");
+//        }
+
+
+    }
+    
 
 }
 

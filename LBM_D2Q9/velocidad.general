@@ -1,5 +1,5 @@
 file = //Users/juvenal/Documents/Tesis/LBM_D2Q9/LBM_D2Q9/velocidad.txt
-grid = 451 x 451
+grid = 531 x 534
 format = ascii
 interleaving = record-vector
 majority = column

@@ -15,16 +15,20 @@
   */
 
 
+
 //=========================================================
 
 //=========================================================
 #include "D2Q9.h"
-int main()
+int main(int num_Arg, char *arr_Arg[])
 
 {
     
     int k,M2,N2;
     double err;
+    Init_Conditions(num_Arg, arr_Arg);
+//    return 1;
+
     M2=Ny/2;
     N2=Nx/2;
     
@@ -37,14 +41,11 @@ int main()
     s[7]=s[8]=1.0/tau;	s[0]=s[3]=s[5]=0.0;	s[4]=s[6]=8*(2-
     s[7])/(8-s[7]);	s[1]=1.6;	s[2]=1.8; // relaxation rates for MRT
     
+//    Init_Conditions();
     Init_Eq();
-    mkeSolid(0, 0, 0, Ny);
-    mkeSolid(Nx,0,Nx,Ny);
-    //mkeSolid(30, 30, 60, 60);
-    mkePorous(25);
     
-    while(err>1.0e-6)
-    //while(err>1.0e-3)
+    //while(err>1.0e-6)
+    while(err>1.0e-3 && k<=3000)
     {
         
         k++;
@@ -55,17 +56,18 @@ int main()
         forceV();
         Den_Vel();	// Fluid variables
         
-        if(k%1000==0)
+        if(k%500==0)
             
         {
             
             err=Err(); // Velocity differences between two successive 1000 steps
             printf("err=%e ux_center=%e uy_center=%e k=%d\n",err,ux[M2][N2],uy[M2][N2], k);  // Display some results
         }
+        printf("k=%d\n", k);
         
     }
     Data_Output();	// Output simulation data
     
-    return 1;
+    return 0;
 }
 
